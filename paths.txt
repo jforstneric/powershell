@@ -1,0 +1,3 @@
+D:\example\path\to\folder1
+C:\second\path\folder2
+C:\third\path\to\folder3
