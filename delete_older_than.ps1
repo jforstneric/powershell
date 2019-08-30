@@ -16,3 +16,4 @@ $paths = Get-Content -Path $list
 
 Get-ChildItem -Path $paths | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-$days) } | Remove-Item
 
+exit 
