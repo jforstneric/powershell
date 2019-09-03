@@ -12,8 +12,18 @@
 
 param([string]$list, [Int32]$days=90)
 
-$paths = Get-Content -Path $list
+#If statement tests if the path to our file exists (otherwise this would start deleting files in our CWD).
 
-Get-ChildItem -Path $paths | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-$days) } | Remove-Item
+if (Test-Path -Path $list) {
 
-exit 
+    $paths = Get-Content -Path $list
+
+    Get-ChildItem -Path $paths | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-$days) } | Remove-Item
+
+    exit 
+}
+
+else {
+    Write-Host "Error - cannot find path $list."
+    exit
+}
