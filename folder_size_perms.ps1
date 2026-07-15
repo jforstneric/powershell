@@ -36,7 +36,7 @@ Add-FolderIfMissing -Path $root
 
 Write-Host "Collecting folder list..."
 try {
-    Get-ChildItem -LiteralPath $root -Directory -Recurse -Force -ErrorAction Stop |
+    Get-ChildItem -LiteralPath "\\?\$root" -Directory -Recurse -Force -ErrorAction Stop |
         ForEach-Object {
             Add-FolderIfMissing -Path $_.FullName
         }
@@ -51,7 +51,7 @@ catch {
 
 Write-Host "Calculating recursive folder sizes..."
 # Get all files once and group by DirectoryName
-$files = Get-ChildItem -LiteralPath $root -File -Recurse -Force -ErrorAction Stop
+$files = Get-ChildItem -LiteralPath "\\?\$root" -File -Recurse -Force -ErrorAction Stop
 
 # Group files by their parent directory and calculate sizes
 $fileGroups = $files | Group-Object DirectoryName
