@@ -7,6 +7,10 @@
 
 $ErrorActionPreference = "Continue"
 
+if (-not (Test-Path -LiteralPath $RootPath -PathType Container)) {
+    throw "Root path '$RootPath' does not exist or is not a directory."
+}
+
 $root = (Resolve-Path -LiteralPath $RootPath).Path.TrimEnd('\')
 $sizeReport = Join-Path $OutputFolder "FolderSizes.csv"
 $permissionReport = Join-Path $OutputFolder "FolderPermissions.csv"
@@ -46,27 +50,22 @@ catch {
 }
 
 Write-Host "Calculating recursive folder sizes..."
-Get-ChildItem -LiteralPath $root -File -Recurse -Force -ErrorAction SilentlyContinue |
-    ForEach-Object {
-        $file = $_
-        $parent = $file.DirectoryName
+# Get all files once and group by DirectoryName
+$files = Get-ChildItem -LiteralPath $root -File -Recurse -Force -ErrorAction Stop
 
-        while ($parent -and $parent.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)) {
-            Add-FolderIfMissing -Path $parent
-            $folderStats[$parent].SizeBytes += $file.Length
-            $folderStats[$parent].FileCount += 1
+# Group files by their parent directory and calculate sizes
+$fileGroups = $files | Group-Object DirectoryName
 
-            if ($parent -ieq $root) {
-                break
-            }
-
-            $parent = Split-Path -Path $parent -Parent
-        }
-    }
+foreach ($group in $fileGroups) {
+    $folderPath = $group.Name
+    Add-FolderIfMissing -Path $folderPath
+    $folderStats[$folderPath].SizeBytes += ($group.Group | Measure-Object -Property Length -Sum).Sum
+    $folderStats[$folderPath].FileCount += $group.Count
+}
 
 $folderStats.Values |
     ForEach-Object {
-        $_.SizeGB = [math]:: / 1GB, 3)
+        $_.SizeGB = [math]::Round($_.SizeBytes / 1GB, 3)
         $_
     } |
     Sort-Object FolderPath |
