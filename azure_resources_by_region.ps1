@@ -30,13 +30,27 @@ if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
 }
 Import-Module -Name ImportExcel
 
-Connect-AzAccount
+if (-not (Get-AzContext)) {
+    Connect-AzAccount -Subscription $Subscription
+}
 Set-AzContext -Subscription $Subscription
+
+Write-Host "Collecting virtual machines..."
+$vms = Get-AzVM
+
+Write-Host "Collecting storage accounts..."
+$storageAccounts = Get-AzStorageAccount
+
+$locations = @($vms) + @($storageAccounts) |
+    Where-Object { $_ } |
+    ForEach-Object { $_.Location } |
+    Select-Object -Unique |
+    Sort-Object
+Write-Host "Locations present in this subscription: $($locations -join ', ')"
 
 $resources = New-Object System.Collections.Generic.List[object]
 
-Write-Host "Collecting virtual machines..."
-Get-AzVM |
+$vms |
     Where-Object { $regionNames -contains (($_.Location -replace '\s', '').ToLower()) } |
     ForEach-Object {
         $resources.Add([PSCustomObject]@{
@@ -48,8 +62,7 @@ Get-AzVM |
         })
     }
 
-Write-Host "Collecting storage accounts..."
-Get-AzStorageAccount |
+$storageAccounts |
     Where-Object { $regionNames -contains (($_.Location -replace '\s', '').ToLower()) } |
     ForEach-Object {
         $resources.Add([PSCustomObject]@{
